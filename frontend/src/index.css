@@ -1,0 +1,70 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* ── Tema: variáveis CSS (dark = padrão) ── */
+:root {
+  --copa-dark:   10 10 10;   /* #0A0A0A */
+  --copa-card:   20 20 20;   /* #141414 */
+  --copa-border: 42 42 42;   /* #2A2A2A */
+}
+
+html.light {
+  --copa-dark:   240 242 245; /* #F0F2F5 */
+  --copa-card:   255 255 255; /* #FFFFFF */
+  --copa-border: 226 232 240; /* #E2E8F0 */
+}
+
+@keyframes slideInRight {
+  from { opacity: 0; transform: translateX(24px); }
+  to   { opacity: 1; transform: translateX(0); }
+}
+
+@layer base {
+  body {
+    background-color: rgb(var(--copa-dark));
+    color: #FFFFFF;
+  }
+
+  ::-webkit-scrollbar { width: 6px; }
+  ::-webkit-scrollbar-track { background: rgb(var(--copa-card)); }
+  ::-webkit-scrollbar-thumb { background: rgb(var(--copa-border)); border-radius: 3px; }
+  ::-webkit-scrollbar-thumb:hover { background: #009C3B; }
+}
+
+/* ── Overrides de texto para modo claro ── */
+/* Fora do @layer → maior prioridade que utilities do Tailwind */
+html.light body { color: #111827; }
+html.light .text-white { color: #111827; }
+html.light .text-gray-300 { color: #374151; }
+html.light .text-gray-400 { color: #4B5563; }
+html.light .text-gray-500 { color: #6B7280; }
+html.light .text-gray-600 { color: #9CA3AF; }
+html.light .placeholder-gray-600::placeholder { color: #9CA3AF; }
+html.light input { color: #111827; }
+
+@layer components {
+  .btn-primary {
+    @apply bg-copa-green text-white font-bold py-2 px-6 rounded-lg hover:bg-green-700 transition-colors duration-200 disabled:opacity-50 disabled:cursor-not-allowed;
+  }
+
+  .btn-secondary {
+    @apply border border-copa-border text-gray-300 font-semibold py-2 px-6 rounded-lg hover:border-copa-green hover:text-white transition-colors duration-200;
+  }
+
+  .card {
+    @apply bg-copa-card border border-copa-border rounded-xl p-4;
+  }
+
+  .badge-agendado {
+    @apply bg-gray-700 text-gray-300 text-xs font-semibold px-2 py-1 rounded-full;
+  }
+
+  .badge-em-andamento {
+    @apply bg-green-900 text-green-400 text-xs font-semibold px-2 py-1 rounded-full animate-pulse;
+  }
+
+  .badge-encerrado {
+    @apply bg-gray-800 text-gray-400 text-xs font-semibold px-2 py-1 rounded-full;
+  }
+}
