@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import Flag from '../ui/Flag'
 
 const LETRAS = ['A','B','C','D','E','F','G','H','I','J','K','L']
 
@@ -59,7 +60,7 @@ function JogoRow({ jogo, palpite, onChange }) {
       {/* Time A */}
       <div className="flex items-center gap-1 flex-1 justify-end min-w-0">
         <span className="text-xs text-gray-300 truncate hidden sm:block">{nomeAbrev(jogo.selecao_a)}</span>
-        <span className="text-base flex-shrink-0">{jogo.selecao_a?.bandeira_emoji}</span>
+        <Flag codigoIso={jogo.selecao_a?.codigo_iso} nome={jogo.selecao_a?.nome_pt} size="xs" />
       </div>
 
       {/* Placar */}
@@ -76,7 +77,7 @@ function JogoRow({ jogo, palpite, onChange }) {
 
       {/* Time B */}
       <div className="flex items-center gap-1 flex-1 min-w-0">
-        <span className="text-base flex-shrink-0">{jogo.selecao_b?.bandeira_emoji}</span>
+        <Flag codigoIso={jogo.selecao_b?.codigo_iso} nome={jogo.selecao_b?.nome_pt} size="xs" />
         <span className="text-xs text-gray-300 truncate hidden sm:block">{nomeAbrev(jogo.selecao_b)}</span>
       </div>
 
@@ -114,7 +115,7 @@ function MiniTabela({ classificacao }) {
             <td className="pl-2 py-1 font-bold text-gray-400">{i + 1}</td>
             <td className="py-1">
               <div className="flex items-center gap-1">
-                <span className="text-sm">{entry.selecao.bandeira_emoji}</span>
+                <Flag codigoIso={entry.selecao.codigo_iso} nome={entry.selecao.nome_pt} size="xs" />
                 <span className={`truncate max-w-[100px] ${i < 2 ? 'text-white font-semibold' : 'text-gray-400'}`}>
                   {nomeAbrev(entry.selecao)}
                 </span>

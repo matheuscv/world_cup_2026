@@ -1,4 +1,5 @@
 import { useState, useEffect, useMemo, useRef } from 'react'
+import Flag from '../components/ui/Flag'
 import SimuladorGrupos from '../components/bolao/SimuladorGrupos.jsx'
 import Chaveamento from '../components/bolao/Chaveamento.jsx'
 import { calcularClassificacao, computarOitavas, computarBracket } from '../utils/classificacao.js'
@@ -534,7 +535,9 @@ export default function BolaoPage() {
                         if (!campeao) return null
                         return (
                           <div className="mt-4 card bg-copa-gold/10 border-copa-gold/40 text-center py-6">
-                            <p className="text-5xl mb-2">{campeao.bandeira_emoji}</p>
+                            <div className="flex justify-center mb-2">
+                              <Flag codigoIso={campeao.codigo_iso} nome={campeao.nome_pt} size="xl" />
+                            </div>
                             <p className="font-display text-2xl text-copa-gold">{campeao.nome_pt}</p>
                             <p className="text-sm text-copa-gold/60 mt-1">Campeão do Mundo 2026 🏆</p>
                           </div>

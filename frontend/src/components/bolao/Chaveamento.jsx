@@ -1,4 +1,5 @@
 import { getVencedorLado } from '../../utils/classificacao.js'
+import Flag from '../ui/Flag'
 
 function Stepper({ value, onChange, min = 0 }) {
   return (
@@ -44,7 +45,7 @@ function ConfrontoCard({ confronto, onchange, label, destaque = false }) {
       {/* Time A */}
       <div className={linhaA}>
         <div className="flex items-center gap-2 flex-1 min-w-0">
-          <span className="text-2xl flex-shrink-0">{selA?.bandeira_emoji || '🏳️'}</span>
+          <Flag codigoIso={selA?.codigo_iso} nome={selA?.nome_pt} size="sm" />
           <div className="min-w-0">
             {selA ? (
               <p className={`text-sm font-semibold truncate ${vencedor === 'A' ? 'text-white' : 'text-gray-300'}`}>
@@ -69,7 +70,7 @@ function ConfrontoCard({ confronto, onchange, label, destaque = false }) {
       {/* Time B */}
       <div className={linhaB}>
         <div className="flex items-center gap-2 flex-1 min-w-0">
-          <span className="text-2xl flex-shrink-0">{selB?.bandeira_emoji || '🏳️'}</span>
+          <Flag codigoIso={selB?.codigo_iso} nome={selB?.nome_pt} size="sm" />
           <div className="min-w-0">
             {selB ? (
               <p className={`text-sm font-semibold truncate ${vencedor === 'B' ? 'text-white' : 'text-gray-300'}`}>

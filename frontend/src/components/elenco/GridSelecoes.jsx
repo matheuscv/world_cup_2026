@@ -1,4 +1,5 @@
 import { useState, useMemo } from 'react'
+import Flag from '../ui/Flag'
 
 const CONFEDERACOES = ['CONMEBOL', 'UEFA', 'CAF', 'CONCACAF', 'AFC', 'OFC']
 
@@ -9,9 +10,7 @@ function CardSelecao({ selecao, onClick }) {
       className="card text-left hover:border-copa-green/50 hover:bg-copa-green/5 transition-all group p-4 w-full"
     >
       <div className="flex items-center gap-3">
-        <span className="text-4xl leading-none flex-shrink-0 group-hover:scale-110 transition-transform">
-          {selecao.bandeira_emoji}
-        </span>
+        <Flag codigoIso={selecao.codigo_iso} nome={selecao.nome_pt} size="lg" className="flex-shrink-0 group-hover:scale-110 transition-transform" />
         <div className="min-w-0">
           <p className="font-bold text-sm text-white truncate group-hover:text-copa-green transition-colors">
             {selecao.nome_pt}

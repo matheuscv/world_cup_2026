@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react'
+import Flag from '../ui/Flag'
 
 const POTES = [1, 2, 3, 4]
 
@@ -12,7 +13,7 @@ const POTE_LABELS = {
 function SelecaoItem({ selecao }) {
   return (
     <div className="flex items-center gap-2 py-1.5 px-2 rounded-lg hover:bg-white/5 transition-colors group">
-      <span className="text-xl leading-none flex-shrink-0">{selecao.bandeira_emoji}</span>
+      <Flag codigoIso={selecao.codigo_iso} nome={selecao.nome_pt} size="sm" />
       <div className="min-w-0">
         <span className={`text-sm font-medium truncate block ${selecao.eh_cabeca_chave ? 'text-white' : 'text-gray-400 group-hover:text-gray-300'}`}>
           {selecao.nome_pt}

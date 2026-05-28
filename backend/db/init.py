@@ -45,12 +45,16 @@ def init_db(reset: bool = False, seed_only: bool = False) -> None:
             for f in migration_files:
                 run_sql_file(conn, f)
 
-        print("Rodando seeds...")
-        seed_files = sorted(SEEDS_DIR.glob("*.sql"))
-        if not seed_files:
-            print("  Nenhum seed encontrado.")
-        for f in seed_files:
-            run_sql_file(conn, f)
+        cursor = conn.execute("SELECT COUNT(*) FROM selecoes")
+        if cursor.fetchone()[0] > 0:
+            print("Seeds já executados, pulando (use --reset para recriar).")
+        else:
+            print("Rodando seeds...")
+            seed_files = sorted(SEEDS_DIR.glob("*.sql"))
+            if not seed_files:
+                print("  Nenhum seed encontrado.")
+            for f in seed_files:
+                run_sql_file(conn, f)
 
         conn.commit()
         print(f"\nBanco inicializado em: {DB_PATH.resolve()}")

@@ -1,4 +1,5 @@
 import { toHoraBrasilia } from '../../utils/formatDate.js'
+import Flag from '../ui/Flag'
 
 const STATUS_CONFIG = {
   agendado:     { label: 'Agendado',  className: 'badge-agendado' },
@@ -70,9 +71,7 @@ export default function JogoCard({ jogo, onClick }) {
       <div className="flex items-center justify-between gap-2">
         {/* Seleção A */}
         <div className={`flex flex-col items-center text-center flex-1 transition-opacity ${encerrado && vitB ? 'opacity-40' : 'opacity-100'}`}>
-          <span className="text-3xl md:text-4xl leading-none mb-2" aria-hidden="true">
-            {selecao_a?.bandeira_emoji}
-          </span>
+          <Flag codigoIso={selecao_a?.codigo_iso} nome={selecao_a?.nome_pt} size="lg" className="mb-2" />
           <span className={`text-sm font-semibold leading-tight ${vitA ? 'text-white' : 'text-gray-300'}`}>
             {selecao_a?.nome_pt}
           </span>
@@ -107,9 +106,7 @@ export default function JogoCard({ jogo, onClick }) {
 
         {/* Seleção B */}
         <div className={`flex flex-col items-center text-center flex-1 transition-opacity ${encerrado && vitA ? 'opacity-40' : 'opacity-100'}`}>
-          <span className="text-3xl md:text-4xl leading-none mb-2" aria-hidden="true">
-            {selecao_b?.bandeira_emoji}
-          </span>
+          <Flag codigoIso={selecao_b?.codigo_iso} nome={selecao_b?.nome_pt} size="lg" className="mb-2" />
           <span className={`text-sm font-semibold leading-tight ${vitB ? 'text-white' : 'text-gray-300'}`}>
             {selecao_b?.nome_pt}
           </span>

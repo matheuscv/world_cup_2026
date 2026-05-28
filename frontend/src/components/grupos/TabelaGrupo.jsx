@@ -1,4 +1,5 @@
 import { toHoraBrasilia } from '../../utils/formatDate.js'
+import Flag from '../ui/Flag'
 
 const STATUS_CFG = {
   agendado:     { label: 'Agendado',  cls: 'badge-agendado' },
@@ -28,7 +29,7 @@ function LinhaClassificacao({ item, pos, onClickSelecao }) {
       <td className="py-2 pl-3 pr-2 text-gray-500 text-xs w-6">{pos}</td>
       <td className="py-2 pr-2">
         <div className="flex items-center gap-2 min-w-0">
-          <span className="text-lg leading-none flex-shrink-0">{item.bandeira_emoji}</span>
+          <Flag codigoIso={item.codigo_iso} nome={item.nome_pt} size="xs" />
           <span className={`font-semibold text-sm truncate ${classificado ? 'text-white' : 'text-gray-300'}`}>
             {item.nome_pt}
           </span>
@@ -68,7 +69,7 @@ function JogoRodada({ jogo }) {
         <span className={`font-medium text-right text-xs truncate max-w-[80px] ${vitA ? 'text-white' : 'text-gray-400'}`}>
           {jogo.selecao_a?.nome_pt}
         </span>
-        <span className="text-base flex-shrink-0">{jogo.selecao_a?.bandeira_emoji}</span>
+        <Flag codigoIso={jogo.selecao_a?.codigo_iso} nome={jogo.selecao_a?.nome_pt} size="xs" />
       </div>
 
       <div className="flex items-center mx-3 min-w-[56px] justify-center">
@@ -84,7 +85,7 @@ function JogoRodada({ jogo }) {
       </div>
 
       <div className={`flex items-center gap-2 flex-1 ${encerrado && vitA ? 'opacity-40' : ''}`}>
-        <span className="text-base flex-shrink-0">{jogo.selecao_b?.bandeira_emoji}</span>
+        <Flag codigoIso={jogo.selecao_b?.codigo_iso} nome={jogo.selecao_b?.nome_pt} size="xs" />
         <span className={`font-medium text-xs truncate max-w-[80px] ${vitB ? 'text-white' : 'text-gray-400'}`}>
           {jogo.selecao_b?.nome_pt}
         </span>
@@ -116,8 +117,8 @@ export default function TabelaGrupo({ letra, classificacao = [], jogos = [], onC
         <div className="flex items-center gap-2">
           <span className="font-display text-xl text-copa-gold">GRUPO {letra}</span>
           {cabecaChave && (
-            <span className="text-lg" title={`Cabeça de chave: ${cabecaChave.nome_pt}`}>
-              {cabecaChave.bandeira_emoji}
+            <span title={`Cabeça de chave: ${cabecaChave.nome_pt}`}>
+              <Flag codigoIso={cabecaChave.codigo_iso} nome={cabecaChave.nome_pt} size="xs" />
             </span>
           )}
         </div>

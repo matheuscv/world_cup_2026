@@ -1,5 +1,6 @@
 import { useState, useEffect, useMemo } from 'react'
 import { toDataBrasilia, toHoraBrasilia } from '../utils/formatDate.js'
+import Flag from '../components/ui/Flag'
 import useAppStore from '../store/useAppStore.js'
 
 const STATUS_COR = {
@@ -80,10 +81,10 @@ function ModalEditar({ jogo, adminKey, onSave, onClose }) {
             <p className="text-xs text-gray-600 uppercase tracking-wider mb-1">
               {jogo.grupo ? `Grupo ${jogo.grupo} · Rodada ${jogo.rodada}` : jogo.fase}
             </p>
-            <h3 className="font-display text-xl text-white">
-              {jogo.selecao_a?.bandeira_emoji} {nomeA}
-              <span className="text-gray-500 mx-2">×</span>
-              {jogo.selecao_b?.bandeira_emoji} {nomeB}
+            <h3 className="font-display text-xl text-white flex items-center gap-2 flex-wrap">
+              <Flag codigoIso={jogo.selecao_a?.codigo_iso} nome={jogo.selecao_a?.nome_pt} size="xs" /> {nomeA}
+              <span className="text-gray-500">×</span>
+              <Flag codigoIso={jogo.selecao_b?.codigo_iso} nome={jogo.selecao_b?.nome_pt} size="xs" /> {nomeB}
             </h3>
             <p className="text-xs text-gray-600 mt-1">{toDataBrasilia(jogo.data_hora_utc)}</p>
           </div>
@@ -94,7 +95,7 @@ function ModalEditar({ jogo, adminKey, onSave, onClose }) {
           <label className="text-[10px] text-gray-600 uppercase tracking-wider mb-2 block">Placar</label>
           <div className="flex items-center gap-3">
             <div className="flex-1">
-              <p className="text-[10px] text-gray-600 text-center mb-1">{jogo.selecao_a?.bandeira_emoji} {nomeA.split(' ')[0]}</p>
+              <p className="text-[10px] text-gray-600 text-center mb-1 flex items-center justify-center gap-1"><Flag codigoIso={jogo.selecao_a?.codigo_iso} nome={jogo.selecao_a?.nome_pt} size="xs" /> {nomeA.split(' ')[0]}</p>
               <input
                 type="number" min="0" max="30" value={gols_a} onChange={e => setGolsA(e.target.value)}
                 className="w-full bg-copa-dark border border-copa-border rounded-lg px-3 py-2.5 text-center font-mono text-2xl font-bold text-white focus:outline-none focus:border-copa-green transition-colors"
@@ -103,7 +104,7 @@ function ModalEditar({ jogo, adminKey, onSave, onClose }) {
             </div>
             <span className="text-gray-500 text-xl mt-4">×</span>
             <div className="flex-1">
-              <p className="text-[10px] text-gray-600 text-center mb-1">{jogo.selecao_b?.bandeira_emoji} {nomeB.split(' ')[0]}</p>
+              <p className="text-[10px] text-gray-600 text-center mb-1 flex items-center justify-center gap-1"><Flag codigoIso={jogo.selecao_b?.codigo_iso} nome={jogo.selecao_b?.nome_pt} size="xs" /> {nomeB.split(' ')[0]}</p>
               <input
                 type="number" min="0" max="30" value={gols_b} onChange={e => setGolsB(e.target.value)}
                 className="w-full bg-copa-dark border border-copa-border rounded-lg px-3 py-2.5 text-center font-mono text-2xl font-bold text-white focus:outline-none focus:border-copa-green transition-colors"
@@ -649,7 +650,7 @@ export default function AdminPage() {
                         </td>
                         <td className="py-3 pr-3">
                           <div className="flex items-center gap-1.5">
-                            <span className="text-base">{jogo.selecao_a?.bandeira_emoji}</span>
+                            <Flag codigoIso={jogo.selecao_a?.codigo_iso} nome={jogo.selecao_a?.nome_pt} size="xs" />
                             <span className="text-sm text-gray-300 truncate max-w-[100px]">{jogo.selecao_a?.nome_pt}</span>
                           </div>
                         </td>
@@ -669,7 +670,7 @@ export default function AdminPage() {
                         </td>
                         <td className="py-3 pr-3">
                           <div className="flex items-center gap-1.5">
-                            <span className="text-base">{jogo.selecao_b?.bandeira_emoji}</span>
+                            <Flag codigoIso={jogo.selecao_b?.codigo_iso} nome={jogo.selecao_b?.nome_pt} size="xs" />
                             <span className="text-sm text-gray-300 truncate max-w-[100px]">{jogo.selecao_b?.nome_pt}</span>
                           </div>
                         </td>

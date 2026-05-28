@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react'
 import { Link } from 'react-router-dom'
+import Flag from '../ui/Flag'
 
 function ResultadoCard({ jogo }) {
   const { selecao_a, selecao_b, gols_a, gols_b, grupo, fase, cidade } = jogo
@@ -18,7 +19,7 @@ function ResultadoCard({ jogo }) {
 
       <div className="flex items-center justify-between gap-2">
         <div className={`flex flex-col items-center text-center flex-1 ${vitA ? 'opacity-100' : 'opacity-50'}`}>
-          <span className="text-3xl leading-none mb-1">{selecao_a?.bandeira_emoji}</span>
+          <Flag codigoIso={selecao_a?.codigo_iso} nome={selecao_a?.nome_pt} size="lg" className="mb-1" />
           <span className="text-xs font-semibold text-white leading-tight">{selecao_a?.nome_pt}</span>
         </div>
 
@@ -29,7 +30,7 @@ function ResultadoCard({ jogo }) {
         </div>
 
         <div className={`flex flex-col items-center text-center flex-1 ${vitB ? 'opacity-100' : 'opacity-50'}`}>
-          <span className="text-3xl leading-none mb-1">{selecao_b?.bandeira_emoji}</span>
+          <Flag codigoIso={selecao_b?.codigo_iso} nome={selecao_b?.nome_pt} size="lg" className="mb-1" />
           <span className="text-xs font-semibold text-white leading-tight">{selecao_b?.nome_pt}</span>
         </div>
       </div>

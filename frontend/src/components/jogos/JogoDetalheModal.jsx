@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react'
 import { toHoraBrasilia, toDataBrasilia } from '../../utils/formatDate.js'
+import Flag from '../ui/Flag'
 
 const FASE_LABELS = {
   grupo:    (g, r) => `Fase de Grupos — Grupo ${g}${r ? ` · Rodada ${r}` : ''}`,
@@ -38,7 +39,7 @@ function MiniTabela({ classificacao, selecaoAId, selecaoBId }) {
                 <td className="py-1.5 pr-2 pl-2 text-gray-500">{idx + 1}</td>
                 <td className="py-1.5">
                   <div className="flex items-center gap-1.5">
-                    <span>{item.bandeira_emoji}</span>
+                    <Flag codigoIso={item.codigo_iso} nome={item.nome_pt} size="xs" />
                     <span className={`font-medium truncate max-w-[100px] ${isDestaque ? 'text-white' : 'text-gray-400'}`}>
                       {item.nome_pt}
                     </span>
@@ -141,7 +142,7 @@ export default function JogoDetalheModal({ jogo, onClose }) {
           <div className="flex items-center justify-between gap-4">
             {/* Seleção A */}
             <div className={`flex flex-col items-center text-center flex-1 ${encerrado && vitB ? 'opacity-40' : ''}`}>
-              <span className="text-5xl leading-none mb-3">{selecao_a?.bandeira_emoji}</span>
+              <Flag codigoIso={selecao_a?.codigo_iso} nome={selecao_a?.nome_pt} size="xl" className="mb-3" />
               <span className={`font-bold text-base ${vitA ? 'text-white' : 'text-gray-300'}`}>
                 {selecao_a?.nome_pt}
               </span>
@@ -183,7 +184,7 @@ export default function JogoDetalheModal({ jogo, onClose }) {
 
             {/* Seleção B */}
             <div className={`flex flex-col items-center text-center flex-1 ${encerrado && vitA ? 'opacity-40' : ''}`}>
-              <span className="text-5xl leading-none mb-3">{selecao_b?.bandeira_emoji}</span>
+              <Flag codigoIso={selecao_b?.codigo_iso} nome={selecao_b?.nome_pt} size="xl" className="mb-3" />
               <span className={`font-bold text-base ${vitB ? 'text-white' : 'text-gray-300'}`}>
                 {selecao_b?.nome_pt}
               </span>

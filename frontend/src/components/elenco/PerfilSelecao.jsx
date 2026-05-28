@@ -1,4 +1,5 @@
 import { toHoraBrasilia, toDataBrasilia } from '../../utils/formatDate.js'
+import Flag from '../ui/Flag'
 
 const CONF_CORES = {
   CONMEBOL: 'text-yellow-400',
@@ -28,7 +29,7 @@ function MiniJogo({ jogo, selecaoId }) {
     <div className="flex items-center justify-between py-2 px-3 rounded-lg bg-copa-dark/40 hover:bg-copa-dark/60 transition-colors">
       <div className="flex items-center gap-2 min-w-0">
         <span className="text-xs text-gray-600 w-12 flex-shrink-0">R{rodada}</span>
-        <span className="text-lg leading-none flex-shrink-0">{adversario?.bandeira_emoji}</span>
+        <Flag codigoIso={adversario?.codigo_iso} nome={adversario?.nome_pt} size="xs" />
         <span className="text-sm text-gray-300 truncate">{adversario?.nome_pt}</span>
       </div>
       <div className="flex items-center gap-2 flex-shrink-0 ml-3">
@@ -71,8 +72,8 @@ export default function PerfilSelecao({ selecao, jogos = [], selecaoAnterior, se
       <div className="card p-0 overflow-hidden">
         <div className="relative bg-gradient-to-br from-copa-green/10 via-copa-card to-copa-dark px-6 py-8">
           {/* Bandeira em marca d'água */}
-          <div className="absolute right-4 top-1/2 -translate-y-1/2 text-[120px] leading-none opacity-10 select-none pointer-events-none" aria-hidden="true">
-            {selecao.bandeira_emoji}
+          <div className="absolute right-4 top-1/2 -translate-y-1/2 opacity-10 select-none pointer-events-none" aria-hidden="true">
+            <Flag codigoIso={selecao.codigo_iso} nome={selecao.nome_pt} size="2xl" rounded={false} />
           </div>
 
           {/* Navegação prev/next */}
@@ -95,7 +96,7 @@ export default function PerfilSelecao({ selecao, jogos = [], selecaoAnterior, se
 
           {/* Identidade */}
           <div className="flex items-center gap-4">
-            <span className="text-6xl md:text-7xl leading-none">{selecao.bandeira_emoji}</span>
+            <Flag codigoIso={selecao.codigo_iso} nome={selecao.nome_pt} size="xl" />
             <div>
               <h2 className="font-display text-3xl md:text-4xl text-white leading-tight">{selecao.nome_pt}</h2>
               <div className="flex flex-wrap items-center gap-2 mt-2">
