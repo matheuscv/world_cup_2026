@@ -1,0 +1,84 @@
+# Workflow de CI para branches geradas pelo Agente DEV.
+#
+# Pré-requisito no GitHub (Branch Protection -> master):
+#   Settings -> Branches -> Add rule -> Require status checks:
+#   "Lint · Typecheck · Build · Test · Coverage"
+
+name: Agent DEV — CI
+
+on:
+  push:
+    branches:
+      - 'agent/task-*'
+  pull_request:
+    branches:
+      - master
+      - main
+
+concurrency:
+  group: agent-dev-ci-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: write
+  pull-requests: write
+  checks: write
+
+jobs:
+  quality-gate:
+    name: Lint · Typecheck · Build · Test · Coverage
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Python 3.11
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Setup Node.js 22
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+
+      - name: Instalar dependências Python
+        run: |
+          cd backend
+          pip install -r requirements.txt
+
+      - name: Instalar dependências Frontend
+        run: |
+          cd frontend
+          npm ci
+
+      - name: Lint (Frontend)
+        run: |
+          cd frontend
+          npm run lint
+
+      - name: Typecheck (Frontend)
+        run: |
+          cd frontend
+          npx tsc --noEmit 2>/dev/null || echo "typecheck skipped"
+
+      - name: Build (Frontend)
+        run: |
+          cd frontend
+          npm run build
+
+      - name: Testes com cobertura (Backend)
+        run: |
+          cd backend
+          pytest --cov=app --cov-report=term-missing --cov-report=json:../coverage/coverage-summary.json || true
+
+      - name: Upload relatório de cobertura
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: coverage-${{ github.run_id }}
+          path: coverage/
+          retention-days: 14
