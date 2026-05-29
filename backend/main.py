@@ -1,13 +1,34 @@
+from contextlib import asynccontextmanager
 from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse, RedirectResponse
 import logging
 
 from app.routes import jogos, grupos, selecoes, boloes, escalacoes, admin
+from app.database import get_pool
+from app.config import DATABASE_URL
 
 logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger(__name__)
 
-app = FastAPI(title="Copa do Mundo 2026 API", version="1.0.0")
+
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    # Startup: testa conexão com o banco
+    logger.info(f"DATABASE_URL configurada: {'sim' if DATABASE_URL else 'NÃO'}")
+    if DATABASE_URL:
+        try:
+            pool = await get_pool()
+            async with pool.acquire() as conn:
+                version = await conn.fetchval("SELECT version()")
+                logger.info(f"Banco conectado: {version[:50]}...")
+        except Exception as e:
+            logger.error(f"ERRO ao conectar ao banco: {e}")
+    yield
+    # Shutdown
+
+
+app = FastAPI(title="Copa do Mundo 2026 API", version="1.0.0", lifespan=lifespan)
 
 app.add_middleware(
     CORSMiddleware,
