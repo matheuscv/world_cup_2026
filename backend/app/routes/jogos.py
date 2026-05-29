@@ -86,6 +86,8 @@ async def listar_jogos(
         params.append(selecao_id)
         i += 1
     if estadio:
+        # Filtro case-sensitive (CA-05): comparação exata via placeholder
+        # parametrizado asyncpg — NUNCA interpolar valor diretamente na string.
         conditions.append(f"j.estadio = ${i}")
         params.append(estadio)
         i += 1
