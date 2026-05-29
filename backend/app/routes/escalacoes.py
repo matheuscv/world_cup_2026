@@ -23,12 +23,12 @@ class EscalacaoUpdate(BaseModel):
 @router.get("/escalacoes")
 async def listar_escalacoes(
     x_session_id: Optional[str] = Header(None),
-    db=Depends(get_db),
+    conn=Depends(get_db),
 ):
     if not x_session_id:
         raise HTTPException(status_code=400, detail="Header X-Session-Id é obrigatório")
 
-    rows = await db.fetch(
+    rows = await conn.fetch(
         "SELECT * FROM escalacoes WHERE session_id = $1 ORDER BY criado_em DESC",
         x_session_id,
     )
@@ -39,12 +39,12 @@ async def listar_escalacoes(
 async def salvar_escalacao(
     body: EscalacaoCreate,
     x_session_id: Optional[str] = Header(None),
-    db=Depends(get_db),
+    conn=Depends(get_db),
 ):
     if not x_session_id:
         raise HTTPException(status_code=400, detail="Header X-Session-Id é obrigatório")
 
-    row = await db.fetchrow(
+    row = await conn.fetchrow(
         """
         INSERT INTO escalacoes (nome, formacao, titulares_json, reservas_json, session_id)
         VALUES ($1, $2, $3, $4, $5) RETURNING *
@@ -59,9 +59,9 @@ async def atualizar_escalacao(
     escalacao_id: int,
     body: EscalacaoUpdate,
     x_session_id: Optional[str] = Header(None),
-    db=Depends(get_db),
+    conn=Depends(get_db),
 ):
-    row = await db.fetchrow(
+    row = await conn.fetchrow(
         "SELECT * FROM escalacoes WHERE id = $1 AND session_id = $2",
         escalacao_id, x_session_id or "",
     )
@@ -74,7 +74,7 @@ async def atualizar_escalacao(
     titulares_json = body.titulares_json if body.titulares_json is not None else current["titulares_json"]
     reservas_json = body.reservas_json if body.reservas_json is not None else current["reservas_json"]
 
-    row = await db.fetchrow(
+    row = await conn.fetchrow(
         """
         UPDATE escalacoes
         SET nome = $1, formacao = $2, titulares_json = $3, reservas_json = $4
@@ -89,12 +89,12 @@ async def atualizar_escalacao(
 async def remover_escalacao(
     escalacao_id: int,
     x_session_id: Optional[str] = Header(None),
-    db=Depends(get_db),
+    conn=Depends(get_db),
 ):
-    if not await db.fetchrow(
+    if not await conn.fetchrow(
         "SELECT id FROM escalacoes WHERE id = $1 AND session_id = $2",
         escalacao_id, x_session_id or "",
     ):
         raise HTTPException(status_code=404, detail="Escalação não encontrada")
 
-    await db.execute("DELETE FROM escalacoes WHERE id = $1", escalacao_id)
+    await conn.execute("DELETE FROM escalacoes WHERE id = $1", escalacao_id)

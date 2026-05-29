@@ -21,12 +21,12 @@ class PalpiteCreate(BaseModel):
 @router.get("/boloes")
 async def listar_boloes(
     x_session_id: Optional[str] = Header(None),
-    db=Depends(get_db),
+    conn=Depends(get_db),
 ):
     if not x_session_id:
         raise HTTPException(status_code=400, detail="Header X-Session-Id é obrigatório")
 
-    rows = await db.fetch(
+    rows = await conn.fetch(
         "SELECT * FROM boloes WHERE session_id = $1 ORDER BY criado_em DESC",
         x_session_id,
     )
@@ -37,12 +37,12 @@ async def listar_boloes(
 async def criar_bolao(
     body: BolaoCreate,
     x_session_id: Optional[str] = Header(None),
-    db=Depends(get_db),
+    conn=Depends(get_db),
 ):
     if not x_session_id:
         raise HTTPException(status_code=400, detail="Header X-Session-Id é obrigatório")
 
-    row = await db.fetchrow(
+    row = await conn.fetchrow(
         "INSERT INTO boloes (nome, session_id) VALUES ($1, $2) RETURNING *",
         body.nome, x_session_id,
     )
@@ -53,15 +53,15 @@ async def criar_bolao(
 async def listar_palpites(
     bolao_id: int,
     x_session_id: Optional[str] = Header(None),
-    db=Depends(get_db),
+    conn=Depends(get_db),
 ):
-    if not await db.fetchrow(
+    if not await conn.fetchrow(
         "SELECT id FROM boloes WHERE id = $1 AND session_id = $2",
         bolao_id, x_session_id or "",
     ):
         raise HTTPException(status_code=404, detail="Bolão não encontrado")
 
-    rows = await db.fetch(
+    rows = await conn.fetch(
         """
         SELECT p.*, j.data_hora_utc, j.fase, j.grupo, j.rodada,
                sa.nome_pt AS nome_pt_a, sb.nome_pt AS nome_pt_b
@@ -82,18 +82,18 @@ async def salvar_palpite(
     bolao_id: int,
     body: PalpiteCreate,
     x_session_id: Optional[str] = Header(None),
-    db=Depends(get_db),
+    conn=Depends(get_db),
 ):
-    if not await db.fetchrow(
+    if not await conn.fetchrow(
         "SELECT id FROM boloes WHERE id = $1 AND session_id = $2",
         bolao_id, x_session_id or "",
     ):
         raise HTTPException(status_code=404, detail="Bolão não encontrado")
 
-    if not await db.fetchrow("SELECT id FROM jogos WHERE id = $1", body.jogo_id):
+    if not await conn.fetchrow("SELECT id FROM jogos WHERE id = $1", body.jogo_id):
         raise HTTPException(status_code=404, detail="Jogo não encontrado")
 
-    row = await db.fetchrow(
+    row = await conn.fetchrow(
         """
         INSERT INTO palpites (bolao_id, jogo_id, gols_a, gols_b, penaltis_a, penaltis_b)
         VALUES ($1, $2, $3, $4, $5, $6)
@@ -114,24 +114,24 @@ async def salvar_palpite(
 async def chaveamento_bolao(
     bolao_id: int,
     x_session_id: Optional[str] = Header(None),
-    db=Depends(get_db),
+    conn=Depends(get_db),
 ):
-    if not await db.fetchrow(
+    if not await conn.fetchrow(
         "SELECT id FROM boloes WHERE id = $1 AND session_id = $2",
         bolao_id, x_session_id or "",
     ):
         raise HTTPException(status_code=404, detail="Bolão não encontrado")
 
-    palpites_rows = await db.fetch(
+    palpites_rows = await conn.fetch(
         "SELECT jogo_id, gols_a, gols_b FROM palpites WHERE bolao_id = $1",
         bolao_id,
     )
     palpites = {row["jogo_id"]: dict(row) for row in palpites_rows}
 
-    jogos = [dict(r) for r in await db.fetch(
+    jogos = [dict(r) for r in await conn.fetch(
         "SELECT id, grupo, selecao_a_id, selecao_b_id FROM jogos WHERE fase = 'grupo'"
     )]
-    selecoes = [dict(r) for r in await db.fetch("SELECT * FROM selecoes")]
+    selecoes = [dict(r) for r in await conn.fetch("SELECT * FROM selecoes")]
 
     from app.services.classificacao import calcular_classificacao
     from app.services.chaveamento import calcular_chaveamento
@@ -158,12 +158,12 @@ async def chaveamento_bolao(
 async def remover_bolao(
     bolao_id: int,
     x_session_id: Optional[str] = Header(None),
-    db=Depends(get_db),
+    conn=Depends(get_db),
 ):
-    if not await db.fetchrow(
+    if not await conn.fetchrow(
         "SELECT id FROM boloes WHERE id = $1 AND session_id = $2",
         bolao_id, x_session_id or "",
     ):
         raise HTTPException(status_code=404, detail="Bolão não encontrado")
 
-    await db.execute("DELETE FROM boloes WHERE id = $1", bolao_id)
+    await conn.execute("DELETE FROM boloes WHERE id = $1", bolao_id)

@@ -37,9 +37,9 @@ async def atualizar_placar(
     jogo_id: int,
     body: PlacarUpdate,
     admin_key: str = Depends(verificar_admin),
-    db=Depends(get_db),
+    conn=Depends(get_db),
 ):
-    row = await db.fetchrow("SELECT * FROM jogos WHERE id = $1", jogo_id)
+    row = await conn.fetchrow("SELECT * FROM jogos WHERE id = $1", jogo_id)
     if not row:
         raise HTTPException(status_code=404, detail="Jogo não encontrado")
 
@@ -60,7 +60,7 @@ async def atualizar_placar(
     else:
         status = current["status"]
 
-    row = await db.fetchrow(
+    row = await conn.fetchrow(
         """
         UPDATE jogos
         SET gols_a = $1, gols_b = $2, penaltis_a = $3, penaltis_b = $4, status = $5
@@ -72,12 +72,12 @@ async def atualizar_placar(
         gols_a, gols_b, penaltis_a, penaltis_b, status, jogo_id,
     )
 
-    sa = await db.fetchrow(
+    sa = await conn.fetchrow(
         "SELECT nome_pt, codigo_iso, bandeira_emoji FROM selecoes WHERE id = $1",
         row["selecao_a_id"],
     ) if row["selecao_a_id"] else None
 
-    sb = await db.fetchrow(
+    sb = await conn.fetchrow(
         "SELECT nome_pt, codigo_iso, bandeira_emoji FROM selecoes WHERE id = $1",
         row["selecao_b_id"],
     ) if row["selecao_b_id"] else None
@@ -103,9 +103,9 @@ async def atualizar_placar(
 @router.get("/admin/selecoes")
 async def listar_selecoes_admin(
     admin_key: str = Depends(verificar_admin),
-    db=Depends(get_db),
+    conn=Depends(get_db),
 ):
-    rows = await db.fetch(
+    rows = await conn.fetch(
         "SELECT id, nome_pt, bandeira_emoji FROM selecoes ORDER BY nome_pt"
     )
     return [dict(row) for row in rows]
@@ -115,9 +115,9 @@ async def listar_selecoes_admin(
 async def listar_jogadores_admin(
     selecao_id: int = Query(...),
     admin_key: str = Depends(verificar_admin),
-    db=Depends(get_db),
+    conn=Depends(get_db),
 ):
-    rows = await db.fetch(
+    rows = await conn.fetch(
         "SELECT * FROM jogadores WHERE selecao_id = $1 ORDER BY posicao, numero",
         selecao_id,
     )
@@ -128,15 +128,15 @@ async def listar_jogadores_admin(
 async def adicionar_jogador(
     body: JogadorCreate,
     admin_key: str = Depends(verificar_admin),
-    db=Depends(get_db),
+    conn=Depends(get_db),
 ):
-    if not await db.fetchrow("SELECT id FROM selecoes WHERE id = $1", body.selecao_id):
+    if not await conn.fetchrow("SELECT id FROM selecoes WHERE id = $1", body.selecao_id):
         raise HTTPException(status_code=404, detail="Seleção não encontrada")
 
     if body.posicao not in ("GK", "DEF", "MID", "FWD"):
         raise HTTPException(status_code=400, detail="Posição inválida. Use: GK, DEF, MID, FWD")
 
-    row = await db.fetchrow(
+    row = await conn.fetchrow(
         """
         INSERT INTO jogadores (selecao_id, numero, nome, nome_curto, posicao, clube, idade, eh_capitao)
         VALUES ($1, $2, $3, $4, $5, $6, $7, $8) RETURNING *
@@ -151,9 +151,9 @@ async def adicionar_jogador(
 async def remover_jogador(
     jogador_id: int,
     admin_key: str = Depends(verificar_admin),
-    db=Depends(get_db),
+    conn=Depends(get_db),
 ):
-    if not await db.fetchrow("SELECT id FROM jogadores WHERE id = $1", jogador_id):
+    if not await conn.fetchrow("SELECT id FROM jogadores WHERE id = $1", jogador_id):
         raise HTTPException(status_code=404, detail="Jogador não encontrado")
 
-    await db.execute("DELETE FROM jogadores WHERE id = $1", jogador_id)
+    await conn.execute("DELETE FROM jogadores WHERE id = $1", jogador_id)

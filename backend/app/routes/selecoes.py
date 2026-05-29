@@ -9,7 +9,7 @@ router = APIRouter()
 async def listar_selecoes(
     grupo: Optional[str] = None,
     confederacao: Optional[str] = None,
-    db=Depends(get_db),
+    conn=Depends(get_db),
 ):
     query = "SELECT * FROM selecoes"
     conditions = []
@@ -30,13 +30,13 @@ async def listar_selecoes(
 
     query += " ORDER BY grupo ASC, pote ASC"
 
-    rows = await db.fetch(query, *params)
+    rows = await conn.fetch(query, *params)
     return [dict(row) for row in rows]
 
 
 @router.get("/selecoes/{selecao_id}")
-async def detalhe_selecao(selecao_id: int, db=Depends(get_db)):
-    row = await db.fetchrow("SELECT * FROM selecoes WHERE id = $1", selecao_id)
+async def detalhe_selecao(selecao_id: int, conn=Depends(get_db)):
+    row = await conn.fetchrow("SELECT * FROM selecoes WHERE id = $1", selecao_id)
 
     if not row:
         raise HTTPException(status_code=404, detail="Seleção não encontrada")
@@ -48,9 +48,9 @@ async def detalhe_selecao(selecao_id: int, db=Depends(get_db)):
 async def elenco_selecao(
     selecao_id: int,
     posicao: Optional[str] = None,
-    db=Depends(get_db),
+    conn=Depends(get_db),
 ):
-    if not await db.fetchrow("SELECT id FROM selecoes WHERE id = $1", selecao_id):
+    if not await conn.fetchrow("SELECT id FROM selecoes WHERE id = $1", selecao_id):
         raise HTTPException(status_code=404, detail="Seleção não encontrada")
 
     query = "SELECT * FROM jogadores WHERE selecao_id = $1"
@@ -62,13 +62,13 @@ async def elenco_selecao(
 
     query += " ORDER BY posicao ASC, numero ASC"
 
-    rows = await db.fetch(query, *params)
+    rows = await conn.fetch(query, *params)
     return [dict(row) for row in rows]
 
 
 @router.get("/selecoes/{selecao_id}/jogos")
-async def jogos_selecao(selecao_id: int, db=Depends(get_db)):
-    if not await db.fetchrow("SELECT id FROM selecoes WHERE id = $1", selecao_id):
+async def jogos_selecao(selecao_id: int, conn=Depends(get_db)):
+    if not await conn.fetchrow("SELECT id FROM selecoes WHERE id = $1", selecao_id):
         raise HTTPException(status_code=404, detail="Seleção não encontrada")
 
     query = """
@@ -86,7 +86,7 @@ async def jogos_selecao(selecao_id: int, db=Depends(get_db)):
         ORDER BY j.data_hora_utc ASC
     """
 
-    rows = await db.fetch(query, selecao_id)
+    rows = await conn.fetch(query, selecao_id)
     return [
         {
             "id": j["id"], "fase": j["fase"], "grupo": j["grupo"],

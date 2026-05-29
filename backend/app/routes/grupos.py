@@ -7,12 +7,12 @@ router = APIRouter()
 GRUPOS = list("ABCDEFGHIJKL")
 
 
-async def _buscar_grupo(letra: str, db):
+async def _buscar_grupo(letra: str, conn):
     letra = letra.upper()
     if letra not in GRUPOS:
         raise HTTPException(status_code=404, detail="Grupo inválido")
 
-    selecoes_rows = await db.fetch(
+    selecoes_rows = await conn.fetch(
         """SELECT id, nome, nome_pt, codigo_iso, bandeira_emoji,
                   eh_cabeca_chave, pote, treinador, ranking_fifa
            FROM selecoes WHERE grupo = $1 ORDER BY id""",
@@ -20,7 +20,7 @@ async def _buscar_grupo(letra: str, db):
     )
     selecoes = [dict(row) for row in selecoes_rows]
 
-    jogos_rows = await db.fetch(
+    jogos_rows = await conn.fetch(
         """SELECT j.id, j.fase, j.grupo, j.rodada, j.data_hora_utc,
                   j.estadio, j.cidade, j.pais_sede, j.status,
                   j.selecao_a_id, j.selecao_b_id,
@@ -64,19 +64,19 @@ async def _buscar_grupo(letra: str, db):
 
 
 @router.get("/grupos")
-async def listar_grupos(db=Depends(get_db)):
-    return [await _buscar_grupo(letra, db) for letra in GRUPOS]
+async def listar_grupos(conn=Depends(get_db)):
+    return [await _buscar_grupo(letra, conn) for letra in GRUPOS]
 
 
 @router.get("/grupos/{letra}")
-async def detalhe_grupo(letra: str, db=Depends(get_db)):
-    return await _buscar_grupo(letra, db)
+async def detalhe_grupo(letra: str, conn=Depends(get_db)):
+    return await _buscar_grupo(letra, conn)
 
 
 @router.get("/classificacao")
-async def classificacao_geral(db=Depends(get_db)):
+async def classificacao_geral(conn=Depends(get_db)):
     resultado = []
     for letra in GRUPOS:
-        grupo = await _buscar_grupo(letra, db)
+        grupo = await _buscar_grupo(letra, conn)
         resultado.append({"letra": letra, "classificacao": grupo["classificacao"]})
     return resultado

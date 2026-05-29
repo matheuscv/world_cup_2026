@@ -57,7 +57,7 @@ async def listar_jogos(
     data: Optional[str] = None,
     selecao_id: Optional[int] = None,
     limit: int = 100,
-    db=Depends(get_db),
+    conn=Depends(get_db),
 ):
     query = BASE_QUERY
     conditions = []
@@ -91,14 +91,14 @@ async def listar_jogos(
     query += f" ORDER BY j.data_hora_utc ASC LIMIT ${i}"
     params.append(limit)
 
-    rows = await db.fetch(query, *params)
+    rows = await conn.fetch(query, *params)
     return [row_to_jogo(row) for row in rows]
 
 
 @router.get("/jogos/{jogo_id}")
-async def detalhe_jogo(jogo_id: int, db=Depends(get_db)):
+async def detalhe_jogo(jogo_id: int, conn=Depends(get_db)):
     query = BASE_QUERY + " WHERE j.id = $1"
-    row = await db.fetchrow(query, jogo_id)
+    row = await conn.fetchrow(query, jogo_id)
 
     if not row:
         raise HTTPException(status_code=404, detail="Jogo não encontrado")
