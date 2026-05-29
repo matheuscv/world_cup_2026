@@ -56,6 +56,7 @@ async def listar_jogos(
     status: Optional[str] = None,
     data: Optional[str] = None,
     selecao_id: Optional[int] = None,
+    estadio: Optional[str] = None,
     limit: int = 100,
     conn=Depends(get_db),
 ):
@@ -83,6 +84,10 @@ async def listar_jogos(
     if selecao_id:
         conditions.append(f"(j.selecao_a_id = ${i} OR j.selecao_b_id = ${i})")
         params.append(selecao_id)
+        i += 1
+    if estadio:
+        conditions.append(f"j.estadio = ${i}")
+        params.append(estadio)
         i += 1
 
     if conditions:
