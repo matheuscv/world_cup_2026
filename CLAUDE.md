@@ -52,7 +52,7 @@ copa2026/
 │   ├── app/
 │   │   ├── __init__.py
 │   │   ├── config.py          # Variáveis de env, paths
-│   │   ├── database.py        # Conexão SQLite, get_db()
+│   │   ├── database.py        # Pool asyncpg, get_db()
 │   │   ├── routes/
 │   │   │   ├── jogos.py       # /api/jogos
 │   │   │   ├── grupos.py      # /api/grupos
@@ -159,12 +159,12 @@ CREATE TABLE IF NOT EXISTS selecoes (
     eh_sede INTEGER NOT NULL DEFAULT 0,
     treinador TEXT,
     ranking_fifa INTEGER,
-    criado_em TEXT DEFAULT (datetime('now'))
+    criado_em TEXT DEFAULT (TO_CHAR(NOW() AT TIME ZONE 'UTC','YYYY-MM-DD"T"HH24:MI:SS'))
 );
 
 -- Jogadores
 CREATE TABLE IF NOT EXISTS jogadores (
-    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    id SERIAL PRIMARY KEY,
     selecao_id INTEGER NOT NULL REFERENCES selecoes(id) ON DELETE CASCADE,
     numero INTEGER,
     nome TEXT NOT NULL,
@@ -173,12 +173,12 @@ CREATE TABLE IF NOT EXISTS jogadores (
     clube TEXT,
     idade INTEGER,
     eh_capitao INTEGER NOT NULL DEFAULT 0,
-    criado_em TEXT DEFAULT (datetime('now'))
+    criado_em TEXT DEFAULT (TO_CHAR(NOW() AT TIME ZONE 'UTC','YYYY-MM-DD"T"HH24:MI:SS'))
 );
 
 -- Jogos
 CREATE TABLE IF NOT EXISTS jogos (
-    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    id SERIAL PRIMARY KEY,
     fase TEXT NOT NULL CHECK(fase IN (
         'grupo','oitavas','quartas','semi','terceiro','final'
     )),
@@ -196,7 +196,7 @@ CREATE TABLE IF NOT EXISTS jogos (
     penaltis_b INTEGER,
     status TEXT NOT NULL DEFAULT 'agendado'
         CHECK(status IN ('agendado','em_andamento','encerrado')),
-    criado_em TEXT DEFAULT (datetime('now'))
+    criado_em TEXT DEFAULT (TO_CHAR(NOW() AT TIME ZONE 'UTC','YYYY-MM-DD"T"HH24:MI:SS'))
 );
 
 -- Índices de performance
@@ -208,16 +208,16 @@ CREATE INDEX IF NOT EXISTS idx_jogadores_selecao ON jogadores(selecao_id);
 
 -- Bolões
 CREATE TABLE IF NOT EXISTS boloes (
-    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    id SERIAL PRIMARY KEY,
     nome TEXT NOT NULL DEFAULT 'Meu Bolão',
     session_id TEXT NOT NULL,
-    criado_em TEXT DEFAULT (datetime('now')),
+    criado_em TEXT DEFAULT (TO_CHAR(NOW() AT TIME ZONE 'UTC','YYYY-MM-DD"T"HH24:MI:SS')),
     atualizado_em TEXT DEFAULT (datetime('now'))
 );
 
 -- Palpites
 CREATE TABLE IF NOT EXISTS palpites (
-    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    id SERIAL PRIMARY KEY,
     bolao_id INTEGER NOT NULL REFERENCES boloes(id) ON DELETE CASCADE,
     jogo_id INTEGER NOT NULL REFERENCES jogos(id),
     gols_a INTEGER NOT NULL DEFAULT 0,
@@ -229,13 +229,13 @@ CREATE TABLE IF NOT EXISTS palpites (
 
 -- Escalações salvas (somente Brasil)
 CREATE TABLE IF NOT EXISTS escalacoes (
-    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    id SERIAL PRIMARY KEY,
     nome TEXT NOT NULL DEFAULT 'Minha Escalação',
     formacao TEXT NOT NULL DEFAULT '4-3-3',
     titulares_json TEXT NOT NULL,       -- Array de {slot, jogador_id}
     reservas_json TEXT,                 -- Array de jogador_ids
     session_id TEXT,
-    criado_em TEXT DEFAULT (datetime('now'))
+    criado_em TEXT DEFAULT (TO_CHAR(NOW() AT TIME ZONE 'UTC','YYYY-MM-DD"T"HH24:MI:SS'))
 );
 ```
 

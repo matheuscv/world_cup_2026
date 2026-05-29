@@ -1,6 +1,6 @@
 BEGIN;
 
--- IDs atribuídos por ordem de inserção (AUTOINCREMENT):
+-- IDs atribuídos por ordem de inserção (SERIAL/sequência PostgreSQL):
 -- Grupo A: 1=México, 2=Coreia do Sul, 3=África do Sul, 4=Tchéquia
 -- Grupo B: 5=Canadá, 6=Bósnia, 7=Catar, 8=Suíça
 -- Grupo C: 9=Brasil, 10=Marrocos, 11=Haiti, 12=Escócia
