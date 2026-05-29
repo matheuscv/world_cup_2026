@@ -2,7 +2,9 @@
 
 Aplicação web completa sobre a FIFA World Cup 2026. Tabela de jogos, grupos, classificação, elencos, escalação interativa e bolão com simulador de chaveamento.
 
-**Stack:** Python 3.11 + FastAPI · React 18 + Vite · SQLite · Tailwind CSS
+**Stack:** Python 3.11 + FastAPI · React 18 + Vite · PostgreSQL (Supabase) · asyncpg · Tailwind CSS
+
+**Deploy:** Frontend → Vercel | Backend → Render | Banco → Supabase (PostgreSQL)
 
 ---
 
@@ -13,6 +15,7 @@ Aplicação web completa sobre a FIFA World Cup 2026. Tabela de jogos, grupos, c
 | Python     | 3.11          |
 | Node.js    | 18            |
 | npm        | 9             |
+| PostgreSQL  | via Supabase ou local |
 
 ---
 
@@ -35,13 +38,13 @@ pip install -r requirements.txt
 copy .env.example .env        # Windows
 # cp .env.example .env        # Linux/macOS
 
-# Editar o .env e definir sua ADMIN_KEY
-# DB_PATH=./db/copa2026.db
+# Editar o .env com sua DATABASE_URL (Supabase/PostgreSQL) e ADMIN_KEY
+# DATABASE_URL=postgresql://user:pass@host:5432/dbname
 # PORT=8000
 # ADMIN_KEY=minha-chave-secreta
 
-# Inicializar banco de dados (cria tabelas + insere dados)
-python db/init.py
+# Rodar migration + seeds no banco PostgreSQL
+python scripts/migrate.py --seed
 ```
 
 ### 2. Frontend
@@ -80,11 +83,9 @@ API docs: **http://localhost:8000/docs**
 
 | Comando | Descrição |
 |---------|-----------|
-| `python db/init.py` | Cria banco + migrations + seeds |
-| `python db/init.py --reset` | **Apaga** e recria tudo do zero |
-| `python db/init.py --seed-only` | Roda apenas os seeds (sem apagar) |
-| `python scripts/backup_db.py` | Cria backup do banco com timestamp |
-| `python scripts/backup_db.py --max-backups 20` | Backup mantendo 20 cópias |
+| `python scripts/migrate.py` | Cria schema + tabelas no PostgreSQL |
+| `python scripts/migrate.py --seed` | Migration + seeds (seleções, jogos, jogadores) |
+| `python scripts/migrate.py --reset` | **Apaga** e recria tudo do zero |
 | `npm run build` | Build de produção do frontend |
 | `npm run preview` | Preview do build de produção |
 
@@ -124,19 +125,22 @@ Acesse `/admin` no frontend para gerenciar jogos e elencos.
 copa2026/
 ├── backend/
 │   ├── app/
-│   │   ├── routes/         # FastAPI routers (jogos, grupos, selecoes, boloes, admin)
-│   │   └── services/       # Lógica de negócio (classificacao, chaveamento)
+│   │   ├── config.py           # Variáveis de ambiente
+│   │   ├── database.py         # Pool asyncpg (PostgreSQL)
+│   │   ├── routes/             # FastAPI routers (jogos, grupos, selecoes, boloes, admin)
+│   │   └── services/           # Lógica de negócio (classificacao, chaveamento)
 │   ├── db/
-│   │   ├── migrations/     # DDL das tabelas
-│   │   ├── seeds/          # Dados iniciais (seleções, jogos, jogadores)
-│   │   └── init.py         # Script de setup do banco
+│   │   ├── migrations/         # DDL PostgreSQL (002_postgresql_copa2026.sql)
+│   │   ├── seeds/              # Dados iniciais (seleções, jogos, jogadores)
+│   │   └── legacy/             # Arquivos SQLite antigos (não usar)
 │   ├── scripts/
-│   │   └── backup_db.py    # Backup automático do SQLite
+│   │   └── migrate.py          # CLI para migrations e seeds
 │   ├── tests/
 │   │   ├── test_classificacao.py  # Testes unitários
 │   │   └── test_api.py            # Testes de integração
 │   ├── main.py             # Entry point FastAPI
 │   ├── requirements.txt
+│   ├── runtime.txt         # Python 3.11.9 (Render)
 │   └── .env.example
 ├── frontend/
 │   ├── src/
@@ -176,61 +180,14 @@ Documentação interativa completa: http://localhost:8000/docs
 
 ---
 
-## Deploy em produção (servidor Linux)
-
-### Build do frontend
-
-```bash
-cd frontend
-npm run build
-# Arquivos gerados em frontend/dist/
-```
-
-### Servir o frontend com o backend (FastAPI serve static)
-
-Adicione ao `backend/main.py`:
-
-```python
-from fastapi.staticfiles import StaticFiles
-from fastapi.responses import FileResponse
-import os
-
-# Após definir as rotas da API:
-FRONTEND_DIR = os.path.join(os.path.dirname(__file__), "..", "frontend", "dist")
-if os.path.isdir(FRONTEND_DIR):
-    app.mount("/", StaticFiles(directory=FRONTEND_DIR, html=True), name="static")
-```
-
-Instale a dependência extra:
-```bash
-pip install aiofiles
-```
-
-### Variáveis de ambiente para produção
-
-```env
-DB_PATH=/var/data/copa2026.db
-PORT=8000
-ADMIN_KEY=chave-longa-e-aleatoria-aqui
-```
-
-### Backup automático (cron)
-
-```cron
-# A cada 6 horas
-0 */6 * * * cd /caminho/copa2026 && /caminho/.venv/bin/python backend/scripts/backup_db.py --max-backups 14
-```
-
----
-
 ## Banco de dados
 
-- **Motor:** SQLite 3 (embutido no Python, zero configuração)
-- **Arquivo:** `backend/db/copa2026.db`
+- **Motor:** PostgreSQL via Supabase (schema `copa2026`)
+- **Driver:** asyncpg (async, sem ORM)
 - **Dados iniciais:** 48 seleções, 72 jogos da fase de grupos, ~183 jogadores
-- **Foreign keys:** ativas via `PRAGMA foreign_keys = ON`
+- **Migrations:** `backend/db/migrations/002_postgresql_copa2026.sql`
 
-Para visualizar o banco use [DB Browser for SQLite](https://sqlitebrowser.org/).
+Para visualizar o banco use o [Supabase Studio](https://supabase.com) ou qualquer cliente PostgreSQL (DBeaver, psql, etc).
 
 ---
 
