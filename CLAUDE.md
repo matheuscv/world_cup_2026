@@ -433,12 +433,12 @@ export function toHorarioBrasilia(utcString) {
 5. **Admin key:** lida de `.env`, nunca exposta no frontend
 6. **Queries sempre parametrizadas com asyncpg (`$N`):**
    ```python
-   # CORRETO — asyncpg/PostgreSQL
-   await db.fetch("SELECT * FROM jogos WHERE grupo = $1", grupo)
+   # CORRETO — asyncpg/PostgreSQL (conn = asyncpg connection object, vem de get_db())
+   await conn.fetch("SELECT * FROM jogos WHERE grupo = $1", grupo)
    # ERRADO — SQL injection!
-   await db.fetch(f"SELECT * FROM jogos WHERE grupo = '{grupo}'")
+   await conn.fetch(f"SELECT * FROM jogos WHERE grupo = '{grupo}'")
    # ERRADO — placeholder SQLite, não funciona com asyncpg
-   await db.fetch("SELECT * FROM jogos WHERE grupo = ?", grupo)
+   await conn.fetch("SELECT * FROM jogos WHERE grupo = ?", grupo)
    ```
 
 ---
@@ -477,12 +477,15 @@ npm run dev                # http://localhost:5173
 
 ## 📋 Checklist Antes de Cada PR/Commit
 
-- [ ] Queries SQL parametrizadas
+- [ ] Queries SQL parametrizadas com `$1, $2...` (PostgreSQL)
 - [ ] Sem `console.log` ou `print` desnecessários
 - [ ] Sem credenciais hardcoded
 - [ ] Componentes React com PropTypes ou TypeScript types
 - [ ] Erro tratado em todo fetch (try/catch)
 - [ ] Responsivo testado em viewport 375px
+- [ ] **Se mudou banco/driver/framework:** atualizar seções "Stack Técnica" e "Schema" do `CLAUDE.md`
+- [ ] **Se adicionou dependência:** verificar se `requirements.txt` e `CLAUDE.md` estão em sincronia
+- [ ] **Se criou migration:** arquivos legados movidos para `backend/db/legacy/`
 
 ---
 
