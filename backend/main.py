@@ -11,8 +11,8 @@ app = FastAPI(title="Copa do Mundo 2026 API", version="1.0.0")
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],  # Restringir em produção com FRONTEND_URL env var
-    allow_credentials=True,
+    allow_origins=["*"],
+    allow_credentials=False,
     allow_methods=["*"],
     allow_headers=["*"],
 )
