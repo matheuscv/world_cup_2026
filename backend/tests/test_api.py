@@ -8,6 +8,7 @@ Execução:
 """
 import json
 import sys
+import urllib.parse
 import urllib.request
 import urllib.error
 from uuid import uuid4
@@ -71,6 +72,65 @@ def run_tests():
     if isinstance(body, list):
         fases = {j.get("fase") for j in body}
         falhas += not ok("Todos os jogos são da fase 'grupo'", fases == {"grupo"}, str(fases))
+
+    # TASK-02: Filtro ?estadio= em GET /api/jogos
+    print("\n--- Filtro ?estadio= (TASK-02) ---")
+    # Descobrir um estádio existente a partir dos jogos já carregados
+    status, todos = req("GET", "/api/jogos?limit=200")
+    estadio_exemplo = None
+    if isinstance(todos, list):
+        for j in todos:
+            if j.get("estadio"):
+                estadio_exemplo = j["estadio"]
+                break
+
+    if estadio_exemplo:
+        path = f"/api/jogos?estadio={urllib.parse.quote(estadio_exemplo)}"
+        status, body = req("GET", path)
+        falhas += not ok(
+            f"GET /api/jogos?estadio={estadio_exemplo!r} retorna 200",
+            status == 200,
+        )
+        falhas += not ok(
+            "Resposta é lista",
+            isinstance(body, list),
+        )
+        if isinstance(body, list):
+            falhas += not ok(
+                "Pelo menos 1 jogo retornado",
+                len(body) >= 1,
+                f"encontrado: {len(body)}",
+            )
+            estadios_distintos = {j.get("estadio") for j in body}
+            falhas += not ok(
+                "Todos os jogos pertencem ao estádio filtrado (case-sensitive)",
+                estadios_distintos == {estadio_exemplo},
+                f"encontrados: {estadios_distintos}",
+            )
+
+        # Estádio inexistente → lista vazia (200, não 404)
+        status, body = req("GET", "/api/jogos?estadio=Estadio%20Inexistente%20XPTO")
+        falhas += not ok(
+            "Estádio inexistente retorna 200 com lista vazia",
+            status == 200 and isinstance(body, list) and len(body) == 0,
+            f"status={status} body={body!r}",
+        )
+
+        # Case-sensitive: versão em caixa alta não deve casar
+        if estadio_exemplo != estadio_exemplo.upper():
+            path_upper = f"/api/jogos?estadio={urllib.parse.quote(estadio_exemplo.upper())}"
+            status, body = req("GET", path_upper)
+            falhas += not ok(
+                "Filtro é case-sensitive (upper-case não casa)",
+                status == 200 and isinstance(body, list) and len(body) == 0,
+                f"status={status} body_len={len(body) if isinstance(body, list) else 'n/a'}",
+            )
+    else:
+        falhas += not ok(
+            "Não foi possível encontrar um estádio para testar TASK-02",
+            False,
+            "nenhum jogo com estadio != null no banco",
+        )
 
     status, body = req("GET", "/api/jogos/1")
     falhas += not ok("GET /api/jogos/1 retorna 200", status == 200)
