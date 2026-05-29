@@ -6,7 +6,7 @@ export async function fetchRetry(url, options = {}, { retries = 2, delay = 800 }
   let lastError
   for (let attempt = 0; attempt <= retries; attempt++) {
     try {
-      return await fetch(fullUrl, options)
+      return await fetch(url, options)
     } catch (err) {
       lastError = err
       if (attempt < retries) {
