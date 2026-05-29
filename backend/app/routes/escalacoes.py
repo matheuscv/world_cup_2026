@@ -28,12 +28,10 @@ async def listar_escalacoes(
     if not x_session_id:
         raise HTTPException(status_code=400, detail="Header X-Session-Id é obrigatório")
 
-    async with db.execute(
-        "SELECT * FROM escalacoes WHERE session_id = ? ORDER BY criado_em DESC",
-        (x_session_id,),
-    ) as cursor:
-        rows = await cursor.fetchall()
-
+    rows = await db.fetch(
+        "SELECT * FROM escalacoes WHERE session_id = $1 ORDER BY criado_em DESC",
+        x_session_id,
+    )
     return [dict(row) for row in rows]
 
 
@@ -46,20 +44,13 @@ async def salvar_escalacao(
     if not x_session_id:
         raise HTTPException(status_code=400, detail="Header X-Session-Id é obrigatório")
 
-    async with db.execute(
+    row = await db.fetchrow(
         """
         INSERT INTO escalacoes (nome, formacao, titulares_json, reservas_json, session_id)
-        VALUES (?, ?, ?, ?, ?)
+        VALUES ($1, $2, $3, $4, $5) RETURNING *
         """,
-        (body.nome, body.formacao, body.titulares_json, body.reservas_json, x_session_id),
-    ) as cursor:
-        escalacao_id = cursor.lastrowid
-
-    await db.commit()
-
-    async with db.execute("SELECT * FROM escalacoes WHERE id = ?", (escalacao_id,)) as cursor:
-        row = await cursor.fetchone()
-
+        body.nome, body.formacao, body.titulares_json, body.reservas_json, x_session_id,
+    )
     return dict(row)
 
 
@@ -70,12 +61,10 @@ async def atualizar_escalacao(
     x_session_id: Optional[str] = Header(None),
     db=Depends(get_db),
 ):
-    async with db.execute(
-        "SELECT * FROM escalacoes WHERE id = ? AND session_id = ?",
-        (escalacao_id, x_session_id or ""),
-    ) as cursor:
-        row = await cursor.fetchone()
-
+    row = await db.fetchrow(
+        "SELECT * FROM escalacoes WHERE id = $1 AND session_id = $2",
+        escalacao_id, x_session_id or "",
+    )
     if not row:
         raise HTTPException(status_code=404, detail="Escalação não encontrada")
 
@@ -85,19 +74,14 @@ async def atualizar_escalacao(
     titulares_json = body.titulares_json if body.titulares_json is not None else current["titulares_json"]
     reservas_json = body.reservas_json if body.reservas_json is not None else current["reservas_json"]
 
-    await db.execute(
+    row = await db.fetchrow(
         """
         UPDATE escalacoes
-        SET nome = ?, formacao = ?, titulares_json = ?, reservas_json = ?
-        WHERE id = ?
+        SET nome = $1, formacao = $2, titulares_json = $3, reservas_json = $4
+        WHERE id = $5 RETURNING *
         """,
-        (nome, formacao, titulares_json, reservas_json, escalacao_id),
+        nome, formacao, titulares_json, reservas_json, escalacao_id,
     )
-    await db.commit()
-
-    async with db.execute("SELECT * FROM escalacoes WHERE id = ?", (escalacao_id,)) as cursor:
-        row = await cursor.fetchone()
-
     return dict(row)
 
 
@@ -107,12 +91,10 @@ async def remover_escalacao(
     x_session_id: Optional[str] = Header(None),
     db=Depends(get_db),
 ):
-    async with db.execute(
-        "SELECT id FROM escalacoes WHERE id = ? AND session_id = ?",
-        (escalacao_id, x_session_id or ""),
-    ) as cursor:
-        if not await cursor.fetchone():
-            raise HTTPException(status_code=404, detail="Escalação não encontrada")
+    if not await db.fetchrow(
+        "SELECT id FROM escalacoes WHERE id = $1 AND session_id = $2",
+        escalacao_id, x_session_id or "",
+    ):
+        raise HTTPException(status_code=404, detail="Escalação não encontrada")
 
-    await db.execute("DELETE FROM escalacoes WHERE id = ?", (escalacao_id,))
-    await db.commit()
+    await db.execute("DELETE FROM escalacoes WHERE id = $1", escalacao_id)

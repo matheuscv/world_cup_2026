@@ -11,5 +11,9 @@ export default defineConfig({
         changeOrigin: true,
       }
     }
+  },
+  define: {
+    // Garante que a variável de ambiente está disponível no build
+    __API_URL__: JSON.stringify(process.env.VITE_API_URL || ''),
   }
 })

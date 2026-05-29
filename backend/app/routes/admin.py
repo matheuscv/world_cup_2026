@@ -39,14 +39,11 @@ async def atualizar_placar(
     admin_key: str = Depends(verificar_admin),
     db=Depends(get_db),
 ):
-    async with db.execute("SELECT * FROM jogos WHERE id = ?", (jogo_id,)) as cursor:
-        row = await cursor.fetchone()
-
+    row = await db.fetchrow("SELECT * FROM jogos WHERE id = $1", jogo_id)
     if not row:
         raise HTTPException(status_code=404, detail="Jogo não encontrado")
 
     current = dict(row)
-
     gols_a = body.gols_a if body.gols_a is not None else current["gols_a"]
     gols_b = body.gols_b if body.gols_b is not None else current["gols_b"]
     penaltis_a = body.penaltis_a if body.penaltis_a is not None else current["penaltis_a"]
@@ -63,56 +60,43 @@ async def atualizar_placar(
     else:
         status = current["status"]
 
-    await db.execute(
+    row = await db.fetchrow(
         """
         UPDATE jogos
-        SET gols_a = ?, gols_b = ?, penaltis_a = ?, penaltis_b = ?, status = ?
-        WHERE id = ?
+        SET gols_a = $1, gols_b = $2, penaltis_a = $3, penaltis_b = $4, status = $5
+        WHERE id = $6
+        RETURNING
+            id, fase, grupo, rodada, data_hora_utc, estadio, cidade, pais_sede, status,
+            selecao_a_id, selecao_b_id, gols_a, gols_b, penaltis_a, penaltis_b
         """,
-        (gols_a, gols_b, penaltis_a, penaltis_b, status, jogo_id),
+        gols_a, gols_b, penaltis_a, penaltis_b, status, jogo_id,
     )
-    await db.commit()
 
-    async with db.execute(
-        """
-        SELECT j.*, sa.nome_pt AS nome_pt_a, sa.codigo_iso AS codigo_iso_a, sa.bandeira_emoji AS bandeira_emoji_a,
-               sb.nome_pt AS nome_pt_b, sb.codigo_iso AS codigo_iso_b, sb.bandeira_emoji AS bandeira_emoji_b
-        FROM jogos j
-        LEFT JOIN selecoes sa ON j.selecao_a_id = sa.id
-        LEFT JOIN selecoes sb ON j.selecao_b_id = sb.id
-        WHERE j.id = ?
-        """,
-        (jogo_id,),
-    ) as cursor:
-        row = await cursor.fetchone()
+    sa = await db.fetchrow(
+        "SELECT nome_pt, codigo_iso, bandeira_emoji FROM selecoes WHERE id = $1",
+        row["selecao_a_id"],
+    ) if row["selecao_a_id"] else None
 
-    j = dict(row)
+    sb = await db.fetchrow(
+        "SELECT nome_pt, codigo_iso, bandeira_emoji FROM selecoes WHERE id = $1",
+        row["selecao_b_id"],
+    ) if row["selecao_b_id"] else None
+
     return {
-        "id": j["id"],
-        "fase": j["fase"],
-        "grupo": j["grupo"],
-        "rodada": j["rodada"],
-        "data_hora_utc": j["data_hora_utc"],
-        "estadio": j["estadio"],
-        "cidade": j["cidade"],
-        "pais_sede": j["pais_sede"],
-        "status": j["status"],
+        "id": row["id"], "fase": row["fase"], "grupo": row["grupo"],
+        "rodada": row["rodada"], "data_hora_utc": row["data_hora_utc"],
+        "estadio": row["estadio"], "cidade": row["cidade"],
+        "pais_sede": row["pais_sede"], "status": row["status"],
         "selecao_a": {
-            "id": j["selecao_a_id"],
-            "nome_pt": j["nome_pt_a"],
-            "codigo_iso": j["codigo_iso_a"],
-            "bandeira_emoji": j["bandeira_emoji_a"],
-        } if j["selecao_a_id"] else None,
+            "id": row["selecao_a_id"], "nome_pt": sa["nome_pt"],
+            "codigo_iso": sa["codigo_iso"], "bandeira_emoji": sa["bandeira_emoji"],
+        } if sa else None,
         "selecao_b": {
-            "id": j["selecao_b_id"],
-            "nome_pt": j["nome_pt_b"],
-            "codigo_iso": j["codigo_iso_b"],
-            "bandeira_emoji": j["bandeira_emoji_b"],
-        } if j["selecao_b_id"] else None,
-        "gols_a": j["gols_a"],
-        "gols_b": j["gols_b"],
-        "penaltis_a": j["penaltis_a"],
-        "penaltis_b": j["penaltis_b"],
+            "id": row["selecao_b_id"], "nome_pt": sb["nome_pt"],
+            "codigo_iso": sb["codigo_iso"], "bandeira_emoji": sb["bandeira_emoji"],
+        } if sb else None,
+        "gols_a": row["gols_a"], "gols_b": row["gols_b"],
+        "penaltis_a": row["penaltis_a"], "penaltis_b": row["penaltis_b"],
     }
 
 
@@ -121,10 +105,9 @@ async def listar_selecoes_admin(
     admin_key: str = Depends(verificar_admin),
     db=Depends(get_db),
 ):
-    async with db.execute(
+    rows = await db.fetch(
         "SELECT id, nome_pt, bandeira_emoji FROM selecoes ORDER BY nome_pt"
-    ) as cursor:
-        rows = await cursor.fetchall()
+    )
     return [dict(row) for row in rows]
 
 
@@ -134,11 +117,10 @@ async def listar_jogadores_admin(
     admin_key: str = Depends(verificar_admin),
     db=Depends(get_db),
 ):
-    async with db.execute(
-        "SELECT * FROM jogadores WHERE selecao_id = ? ORDER BY posicao, numero",
-        (selecao_id,),
-    ) as cursor:
-        rows = await cursor.fetchall()
+    rows = await db.fetch(
+        "SELECT * FROM jogadores WHERE selecao_id = $1 ORDER BY posicao, numero",
+        selecao_id,
+    )
     return [dict(row) for row in rows]
 
 
@@ -148,28 +130,20 @@ async def adicionar_jogador(
     admin_key: str = Depends(verificar_admin),
     db=Depends(get_db),
 ):
-    async with db.execute("SELECT id FROM selecoes WHERE id = ?", (body.selecao_id,)) as cursor:
-        if not await cursor.fetchone():
-            raise HTTPException(status_code=404, detail="Seleção não encontrada")
+    if not await db.fetchrow("SELECT id FROM selecoes WHERE id = $1", body.selecao_id):
+        raise HTTPException(status_code=404, detail="Seleção não encontrada")
 
     if body.posicao not in ("GK", "DEF", "MID", "FWD"):
         raise HTTPException(status_code=400, detail="Posição inválida. Use: GK, DEF, MID, FWD")
 
-    async with db.execute(
+    row = await db.fetchrow(
         """
         INSERT INTO jogadores (selecao_id, numero, nome, nome_curto, posicao, clube, idade, eh_capitao)
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+        VALUES ($1, $2, $3, $4, $5, $6, $7, $8) RETURNING *
         """,
-        (body.selecao_id, body.numero, body.nome, body.nome_curto,
-         body.posicao, body.clube, body.idade, body.eh_capitao),
-    ) as cursor:
-        jogador_id = cursor.lastrowid
-
-    await db.commit()
-
-    async with db.execute("SELECT * FROM jogadores WHERE id = ?", (jogador_id,)) as cursor:
-        row = await cursor.fetchone()
-
+        body.selecao_id, body.numero, body.nome, body.nome_curto,
+        body.posicao, body.clube, body.idade, body.eh_capitao,
+    )
     return dict(row)
 
 
@@ -179,9 +153,7 @@ async def remover_jogador(
     admin_key: str = Depends(verificar_admin),
     db=Depends(get_db),
 ):
-    async with db.execute("SELECT id FROM jogadores WHERE id = ?", (jogador_id,)) as cursor:
-        if not await cursor.fetchone():
-            raise HTTPException(status_code=404, detail="Jogador não encontrado")
+    if not await db.fetchrow("SELECT id FROM jogadores WHERE id = $1", jogador_id):
+        raise HTTPException(status_code=404, detail="Jogador não encontrado")
 
-    await db.execute("DELETE FROM jogadores WHERE id = ?", (jogador_id,))
-    await db.commit()
+    await db.execute("DELETE FROM jogadores WHERE id = $1", jogador_id)

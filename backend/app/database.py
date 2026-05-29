@@ -1,20 +1,23 @@
-import sqlite3
-import aiosqlite
-from app.config import DB_PATH
+import asyncpg
+from app.config import DATABASE_URL
+
+_pool = None
 
 
-def get_db_sync():
-    conn = sqlite3.connect(DB_PATH)
-    conn.row_factory = sqlite3.Row
-    conn.execute("PRAGMA foreign_keys = ON")
-    try:
-        yield conn
-    finally:
-        conn.close()
+async def get_pool():
+    global _pool
+    if _pool is None:
+        _pool = await asyncpg.create_pool(
+            DATABASE_URL,
+            min_size=1,
+            max_size=10,
+            server_settings={"search_path": "copa2026"},
+            ssl="require",
+        )
+    return _pool
 
 
 async def get_db():
-    async with aiosqlite.connect(DB_PATH) as db:
-        db.row_factory = aiosqlite.Row
-        await db.execute("PRAGMA foreign_keys = ON")
-        yield db
+    pool = await get_pool()
+    async with pool.acquire() as conn:
+        yield conn

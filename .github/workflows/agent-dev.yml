@@ -7,6 +7,7 @@
 name: Agent DEV — CI
 
 on:
+  workflow_dispatch:
   push:
     branches:
       - 'agent/task-*'

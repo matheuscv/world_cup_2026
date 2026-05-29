@@ -26,12 +26,10 @@ async def listar_boloes(
     if not x_session_id:
         raise HTTPException(status_code=400, detail="Header X-Session-Id é obrigatório")
 
-    async with db.execute(
-        "SELECT * FROM boloes WHERE session_id = ? ORDER BY criado_em DESC",
-        (x_session_id,),
-    ) as cursor:
-        rows = await cursor.fetchall()
-
+    rows = await db.fetch(
+        "SELECT * FROM boloes WHERE session_id = $1 ORDER BY criado_em DESC",
+        x_session_id,
+    )
     return [dict(row) for row in rows]
 
 
@@ -44,17 +42,10 @@ async def criar_bolao(
     if not x_session_id:
         raise HTTPException(status_code=400, detail="Header X-Session-Id é obrigatório")
 
-    async with db.execute(
-        "INSERT INTO boloes (nome, session_id) VALUES (?, ?)",
-        (body.nome, x_session_id),
-    ) as cursor:
-        bolao_id = cursor.lastrowid
-
-    await db.commit()
-
-    async with db.execute("SELECT * FROM boloes WHERE id = ?", (bolao_id,)) as cursor:
-        row = await cursor.fetchone()
-
+    row = await db.fetchrow(
+        "INSERT INTO boloes (nome, session_id) VALUES ($1, $2) RETURNING *",
+        body.nome, x_session_id,
+    )
     return dict(row)
 
 
@@ -64,15 +55,13 @@ async def listar_palpites(
     x_session_id: Optional[str] = Header(None),
     db=Depends(get_db),
 ):
-    # Verificar acesso ao bolão
-    async with db.execute(
-        "SELECT id FROM boloes WHERE id = ? AND session_id = ?",
-        (bolao_id, x_session_id or ""),
-    ) as cursor:
-        if not await cursor.fetchone():
-            raise HTTPException(status_code=404, detail="Bolão não encontrado")
+    if not await db.fetchrow(
+        "SELECT id FROM boloes WHERE id = $1 AND session_id = $2",
+        bolao_id, x_session_id or "",
+    ):
+        raise HTTPException(status_code=404, detail="Bolão não encontrado")
 
-    async with db.execute(
+    rows = await db.fetch(
         """
         SELECT p.*, j.data_hora_utc, j.fase, j.grupo, j.rodada,
                sa.nome_pt AS nome_pt_a, sb.nome_pt AS nome_pt_b
@@ -80,13 +69,11 @@ async def listar_palpites(
         JOIN jogos j ON p.jogo_id = j.id
         LEFT JOIN selecoes sa ON j.selecao_a_id = sa.id
         LEFT JOIN selecoes sb ON j.selecao_b_id = sb.id
-        WHERE p.bolao_id = ?
+        WHERE p.bolao_id = $1
         ORDER BY j.data_hora_utc ASC
         """,
-        (bolao_id,),
-    ) as cursor:
-        rows = await cursor.fetchall()
-
+        bolao_id,
+    )
     return [dict(row) for row in rows]
 
 
@@ -97,40 +84,29 @@ async def salvar_palpite(
     x_session_id: Optional[str] = Header(None),
     db=Depends(get_db),
 ):
-    # Verificar acesso ao bolão
-    async with db.execute(
-        "SELECT id FROM boloes WHERE id = ? AND session_id = ?",
-        (bolao_id, x_session_id or ""),
-    ) as cursor:
-        if not await cursor.fetchone():
-            raise HTTPException(status_code=404, detail="Bolão não encontrado")
+    if not await db.fetchrow(
+        "SELECT id FROM boloes WHERE id = $1 AND session_id = $2",
+        bolao_id, x_session_id or "",
+    ):
+        raise HTTPException(status_code=404, detail="Bolão não encontrado")
 
-    # Verificar se jogo existe
-    async with db.execute("SELECT id FROM jogos WHERE id = ?", (body.jogo_id,)) as cursor:
-        if not await cursor.fetchone():
-            raise HTTPException(status_code=404, detail="Jogo não encontrado")
+    if not await db.fetchrow("SELECT id FROM jogos WHERE id = $1", body.jogo_id):
+        raise HTTPException(status_code=404, detail="Jogo não encontrado")
 
-    # Upsert
-    await db.execute(
+    row = await db.fetchrow(
         """
         INSERT INTO palpites (bolao_id, jogo_id, gols_a, gols_b, penaltis_a, penaltis_b)
-        VALUES (?, ?, ?, ?, ?, ?)
+        VALUES ($1, $2, $3, $4, $5, $6)
         ON CONFLICT(bolao_id, jogo_id) DO UPDATE SET
-            gols_a = excluded.gols_a,
-            gols_b = excluded.gols_b,
-            penaltis_a = excluded.penaltis_a,
-            penaltis_b = excluded.penaltis_b
+            gols_a = EXCLUDED.gols_a,
+            gols_b = EXCLUDED.gols_b,
+            penaltis_a = EXCLUDED.penaltis_a,
+            penaltis_b = EXCLUDED.penaltis_b
+        RETURNING *
         """,
-        (bolao_id, body.jogo_id, body.gols_a, body.gols_b, body.penaltis_a, body.penaltis_b),
+        bolao_id, body.jogo_id, body.gols_a, body.gols_b,
+        body.penaltis_a, body.penaltis_b,
     )
-    await db.commit()
-
-    async with db.execute(
-        "SELECT * FROM palpites WHERE bolao_id = ? AND jogo_id = ?",
-        (bolao_id, body.jogo_id),
-    ) as cursor:
-        row = await cursor.fetchone()
-
     return dict(row)
 
 
@@ -140,26 +116,22 @@ async def chaveamento_bolao(
     x_session_id: Optional[str] = Header(None),
     db=Depends(get_db),
 ):
-    async with db.execute(
-        "SELECT id FROM boloes WHERE id = ? AND session_id = ?",
-        (bolao_id, x_session_id or ""),
-    ) as cursor:
-        if not await cursor.fetchone():
-            raise HTTPException(status_code=404, detail="Bolão não encontrado")
+    if not await db.fetchrow(
+        "SELECT id FROM boloes WHERE id = $1 AND session_id = $2",
+        bolao_id, x_session_id or "",
+    ):
+        raise HTTPException(status_code=404, detail="Bolão não encontrado")
 
-    async with db.execute(
-        "SELECT jogo_id, gols_a, gols_b FROM palpites WHERE bolao_id = ?",
-        (bolao_id,),
-    ) as cursor:
-        palpites = {row["jogo_id"]: dict(row) for row in await cursor.fetchall()}
+    palpites_rows = await db.fetch(
+        "SELECT jogo_id, gols_a, gols_b FROM palpites WHERE bolao_id = $1",
+        bolao_id,
+    )
+    palpites = {row["jogo_id"]: dict(row) for row in palpites_rows}
 
-    async with db.execute(
+    jogos = [dict(r) for r in await db.fetch(
         "SELECT id, grupo, selecao_a_id, selecao_b_id FROM jogos WHERE fase = 'grupo'"
-    ) as cursor:
-        jogos = [dict(row) for row in await cursor.fetchall()]
-
-    async with db.execute("SELECT * FROM selecoes") as cursor:
-        selecoes = [dict(row) for row in await cursor.fetchall()]
+    )]
+    selecoes = [dict(r) for r in await db.fetch("SELECT * FROM selecoes")]
 
     from app.services.classificacao import calcular_classificacao
     from app.services.chaveamento import calcular_chaveamento
@@ -170,7 +142,6 @@ async def chaveamento_bolao(
     for letra in grupos_letras:
         jogos_grupo = [j for j in jogos if j["grupo"] == letra]
         selecoes_grupo = [s for s in selecoes if s["grupo"] == letra]
-
         jogos_com_palpites = []
         for j in jogos_grupo:
             if j["id"] in palpites:
@@ -178,7 +149,6 @@ async def chaveamento_bolao(
                 jogos_com_palpites.append({**j, "gols_a": p["gols_a"], "gols_b": p["gols_b"]})
             else:
                 jogos_com_palpites.append({**j, "gols_a": None, "gols_b": None})
-
         classificacoes[letra] = calcular_classificacao(jogos_com_palpites, selecoes_grupo)
 
     return calcular_chaveamento(classificacoes)
@@ -190,12 +160,10 @@ async def remover_bolao(
     x_session_id: Optional[str] = Header(None),
     db=Depends(get_db),
 ):
-    async with db.execute(
-        "SELECT id FROM boloes WHERE id = ? AND session_id = ?",
-        (bolao_id, x_session_id or ""),
-    ) as cursor:
-        if not await cursor.fetchone():
-            raise HTTPException(status_code=404, detail="Bolão não encontrado")
+    if not await db.fetchrow(
+        "SELECT id FROM boloes WHERE id = $1 AND session_id = $2",
+        bolao_id, x_session_id or "",
+    ):
+        raise HTTPException(status_code=404, detail="Bolão não encontrado")
 
-    await db.execute("DELETE FROM boloes WHERE id = ?", (bolao_id,))
-    await db.commit()
+    await db.execute("DELETE FROM boloes WHERE id = $1", bolao_id)

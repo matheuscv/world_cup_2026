@@ -62,40 +62,43 @@ async def listar_jogos(
     query = BASE_QUERY
     conditions = []
     params = []
+    i = 1
 
     if fase:
-        conditions.append("j.fase = ?")
+        conditions.append(f"j.fase = ${i}")
         params.append(fase)
+        i += 1
     if grupo:
-        conditions.append("j.grupo = ?")
+        conditions.append(f"j.grupo = ${i}")
         params.append(grupo.upper())
+        i += 1
     if status:
-        conditions.append("j.status = ?")
+        conditions.append(f"j.status = ${i}")
         params.append(status)
+        i += 1
     if data:
-        conditions.append("DATE(j.data_hora_utc) = ?")
+        conditions.append(f"LEFT(j.data_hora_utc, 10) = ${i}")
         params.append(data)
+        i += 1
     if selecao_id:
-        conditions.append("(j.selecao_a_id = ? OR j.selecao_b_id = ?)")
-        params.extend([selecao_id, selecao_id])
+        conditions.append(f"(j.selecao_a_id = ${i} OR j.selecao_b_id = ${i})")
+        params.append(selecao_id)
+        i += 1
 
     if conditions:
         query += " WHERE " + " AND ".join(conditions)
 
-    query += " ORDER BY j.data_hora_utc ASC LIMIT ?"
+    query += f" ORDER BY j.data_hora_utc ASC LIMIT ${i}"
     params.append(limit)
 
-    async with db.execute(query, params) as cursor:
-        rows = await cursor.fetchall()
-
+    rows = await db.fetch(query, *params)
     return [row_to_jogo(row) for row in rows]
 
 
 @router.get("/jogos/{jogo_id}")
 async def detalhe_jogo(jogo_id: int, db=Depends(get_db)):
-    query = BASE_QUERY + " WHERE j.id = ?"
-    async with db.execute(query, (jogo_id,)) as cursor:
-        row = await cursor.fetchone()
+    query = BASE_QUERY + " WHERE j.id = $1"
+    row = await db.fetchrow(query, jogo_id)
 
     if not row:
         raise HTTPException(status_code=404, detail="Jogo não encontrado")
